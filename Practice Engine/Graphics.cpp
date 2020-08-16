@@ -1,11 +1,16 @@
 #include "Graphics.h"
 #include "Assert.h"
+#include <d3dcompiler.h>
 
 #pragma comment(lib, "d3d11.lib" )
+#pragma comment(lib, "D3DCompiler.lib")
 
 namespace wrl = Microsoft::WRL;
 
-Graphics::Graphics(HWND hWnd)
+Graphics::Graphics(HWND hWnd, int width, int height)
+	:
+	width(width),
+	height(height)
 {
 	DXGI_SWAP_CHAIN_DESC sd = {};
 	sd.BufferDesc.Width = 0;
@@ -51,9 +56,89 @@ Graphics::Graphics(HWND hWnd)
 	ASSERT_HRESULT_INFOQUEUE(pDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, &pTarget));	
 }
 
+void Graphics::DrawTestTriangle()
+{
+	struct Vertex
+	{
+		float x;
+		float y;
+	};
+
+	const Vertex vertices[] =
+	{
+		{0.0f, 0.5f},
+		{0.5f, -0.5f},
+		{-0.5f, -0.5f}
+	};
+
+
+	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
+	D3D11_BUFFER_DESC bd = {};
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.CPUAccessFlags = 0u;
+	bd.MiscFlags = 0u;
+	bd.ByteWidth = sizeof(vertices);
+	bd.StructureByteStride = sizeof(Vertex);
+	D3D11_SUBRESOURCE_DATA srd = {};
+	srd.pSysMem = vertices;
+	ASSERT_HRESULT_INFOQUEUE( pDevice->CreateBuffer(&bd, &srd, &pVertexBuffer));
+	const UINT stride = sizeof(Vertex);
+	const UINT offset = 0u;
+
+	ASSERT_INFOQUEUE(pContext->IASetVertexBuffers(0u, 1u, pVertexBuffer.GetAddressOf(), &stride, &offset));
+
+	// vertex shader
+	wrl::ComPtr<ID3D11VertexShader> pVertexShader;
+	wrl::ComPtr<ID3DBlob> pBlob;
+	ASSERT_HRESULT_INFOQUEUE(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
+	ASSERT_HRESULT_INFOQUEUE(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
+
+	ASSERT_INFOQUEUE(pContext->VSSetShader(pVertexShader.Get(), nullptr, 0));
+
+	// input layout
+	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
+	const D3D11_INPUT_ELEMENT_DESC ied[] =
+	{
+		{"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},
+	};
+	ASSERT_HRESULT_INFOQUEUE(pDevice->CreateInputLayout(ied, 1u, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
+
+	pContext->IASetInputLayout(pInputLayout.Get());
+
+	//pixel shader
+	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
+
+	ASSERT_HRESULT_INFOQUEUE(D3DReadFileToBlob(L"PixelShader.cso", &pBlob));
+	ASSERT_HRESULT_INFOQUEUE(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
+
+	ASSERT_INFOQUEUE(pContext->PSSetShader(pPixelShader.Get(),nullptr, 0));
+
+	// set topology
+	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+
+	// bind render target
+	pContext->OMSetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
+
+	// configure viewport
+	D3D11_RENDER_TARGET_VIEW_DESC rtvd;
+	ASSERT_INFOQUEUE(pTarget->GetDesc(&rtvd));
+
+	D3D11_VIEWPORT vp;
+	vp.Width = (float)width;
+	vp.Height = (float)height;
+	vp.MinDepth = 0;
+	vp.MaxDepth = 1;
+	vp.TopLeftX = 0;
+	vp.TopLeftY = 0;
+	pContext->RSSetViewports(1u, &vp);
+
+	ASSERT_INFOQUEUE(pContext->Draw(std::size( vertices), 0u));
+}
+
 void Graphics::EndFrame()
 {
-	pSwap->Present(1u, 0u);
+	ASSERT_HRESULT_INFOQUEUE(pSwap->Present(1u, 0u));
 }
 
 void Graphics::ClearBuffer(float r, float g, float b)

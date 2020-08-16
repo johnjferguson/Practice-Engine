@@ -27,7 +27,9 @@ DxgiInfoManager::DxgiInfoManager()
 
 void DxgiInfoManager::Set()
 {
+    int i = 1;
     next = pDxgiInfoQueue->GetNumStoredMessages(DXGI_DEBUG_ALL);
+    int j = 0;
 }
 
 std::vector<std::wstring> DxgiInfoManager::GetMessages() const
@@ -37,7 +39,7 @@ std::vector<std::wstring> DxgiInfoManager::GetMessages() const
     const auto end = pDxgiInfoQueue->GetNumStoredMessages(DXGI_DEBUG_ALL);
     for (auto i = next; i < end; i++)
     {
-        SIZE_T messageLength;
+        SIZE_T messageLength = SIZE_T(0);
         pDxgiInfoQueue->GetMessageW(DXGI_DEBUG_ALL, i, nullptr, &messageLength);
         DXGI_INFO_QUEUE_MESSAGE* pMessage = (DXGI_INFO_QUEUE_MESSAGE*)malloc(messageLength);
         pDxgiInfoQueue->GetMessageW(DXGI_DEBUG_ALL, i, pMessage, &messageLength);

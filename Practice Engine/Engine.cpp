@@ -20,6 +20,7 @@ void Engine::DoFrame()
 {
 	const float c = float(sin(timer.Peek("dt"))) / 2.0f + 0.5f;
 	wnd.Gfx().ClearBuffer(c, 0.5f, 0.5f);
+	wnd.Gfx().DrawTestTriangle();
 	wnd.Gfx().EndFrame();
 
 }

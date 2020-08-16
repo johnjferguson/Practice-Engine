@@ -84,7 +84,7 @@ Window::Window(int width, int height, const wchar_t * name)
 	ShowWindow(hWnd, SW_SHOW);
 
 	// create directx graphics object
-	pGraphics = std::make_unique<Graphics>(hWnd);
+	pGraphics = std::make_unique<Graphics>(hWnd, width, height);
 }
 
 Window::~Window()
