@@ -26,21 +26,41 @@ private:
 		HINSTANCE hInstance;
 	};
 public:
-	Window(int width, int height, const wchar_t* name);
+	enum class Resolution
+	{
+		R1920X1080,
+		R1280X720,
+		R640X480,
+		FULLSCREEN
+	};
+public:
+	Window(Window::Resolution resolution, const wchar_t* name);
 	~Window();
 	Window(const Window&) = delete;
+	void SetFullscreen(bool fullscreen);
 	Window& operator=(const Window&) = delete;
 	std::optional<int> ProcessMessages();
 	Graphics& Gfx();
+	Window::Resolution GetResolution() const;
+	HWND GetHWnd();
 private:
 	static LRESULT CALLBACK HandleThunk(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 	LRESULT Handle(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+public:
+	Mouse mouse;
+	Keyboard kbd;
 private:
+	Window::Resolution resolution;
 	int width;
 	int height;
 	// width and height have to be defined before mouse
-	Mouse mouse;
-	Keyboard kbd;
 	HWND hWnd;
 	std::unique_ptr<Graphics> pGraphics;
+
+	// temp
+	HWND m_hWindow;
+	RECT m_WindowRect;
+	uint32_t m_Width;
+	uint32_t m_Height;
+	bool m_Fullscreen = false;
 };

@@ -1,6 +1,8 @@
 #include "Graphics.h"
 #include "Assert.h"
 #include <d3dcompiler.h>
+#include "ImGui/examples/imgui_impl_dx11.h"
+#include "ImGui/examples//imgui_impl_win32.h"
 
 #pragma comment(lib, "d3d11.lib" )
 #pragma comment(lib, "D3DCompiler.lib")
@@ -53,7 +55,25 @@ Graphics::Graphics(HWND hWnd, int width, int height)
 
 	wrl::ComPtr<ID3D11Texture2D> pBackBuffer;
 	ASSERT_HRESULT_INFOQUEUE(pSwap->GetBuffer(0, __uuidof(ID3D11Texture2D), &pBackBuffer));
-	ASSERT_HRESULT_INFOQUEUE(pDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, &pTarget));	
+	ASSERT_HRESULT_INFOQUEUE(pDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, &pTarget));
+
+	// init imgui directx11 impl
+	ImGui_ImplDX11_Init(pDevice.Get(), pContext.Get());
+}
+
+Graphics::~Graphics()
+{
+	ImGui_ImplDX11_Shutdown();
+}
+
+ID3D11Device* Graphics::GetDevice()
+{
+	return pDevice.Get();
+}
+
+ID3D11DeviceContext* Graphics::GetContext()
+{
+	return pContext.Get();
 }
 
 void Graphics::DrawTestTriangle()
@@ -136,9 +156,40 @@ void Graphics::DrawTestTriangle()
 	ASSERT_INFOQUEUE(pContext->Draw(std::size( vertices), 0u));
 }
 
+void Graphics::BeginFrame()
+{
+	if (imguiEnabled)
+	{
+		ImGui_ImplDX11_NewFrame();
+		ImGui_ImplWin32_NewFrame();
+		ImGui::NewFrame();
+	}
+}
+
 void Graphics::EndFrame()
 {
+	if (imguiEnabled)
+	{
+		ImGui::Render();
+		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
+	}
+
 	ASSERT_HRESULT_INFOQUEUE(pSwap->Present(1u, 0u));
+}
+
+void Graphics::EnableImgui()
+{
+	imguiEnabled = true;
+}
+
+void Graphics::DisableImgui()
+{
+	imguiEnabled = false;
+}
+
+bool Graphics::IsImguiEnabled() const
+{
+	return imguiEnabled;
 }
 
 void Graphics::ClearBuffer(float r, float g, float b)
@@ -147,7 +198,9 @@ void Graphics::ClearBuffer(float r, float g, float b)
 	ASSERT_INFOQUEUE(pContext->ClearRenderTargetView(pTarget.Get(), color));
 }
 
+#if _DEBUG
 DxgiInfoManager& Graphics::GetInfoManager()
 {
 	return infoManager;
 }
+#endif

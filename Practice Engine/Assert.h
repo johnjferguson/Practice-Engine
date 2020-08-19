@@ -91,3 +91,11 @@
 #define ASSERT_INFOQUEUE(func) func
 
 #endif
+
+template <class T>
+void PrintDebug(const std::wstring& str, T i)
+{
+	std::wstringstream wss;
+	wss << str << " : " << (unsigned long long)i << std::endl;
+	OutputDebugString(wss.str().c_str());
+}

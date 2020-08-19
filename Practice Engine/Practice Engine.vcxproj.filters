@@ -16,6 +16,9 @@
     <Filter Include="Shaders">
       <UniqueIdentifier>{fd1de6c6-19fe-4845-8911-8faf1ba9cfce}</UniqueIdentifier>
     </Filter>
+    <Filter Include="ImGui">
+      <UniqueIdentifier>{61c31a74-9e24-4f10-be83-030df4ccf0be}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MessageMap.cpp">
@@ -43,6 +46,33 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DxgiInfoManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_demo.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_draw.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\imgui_widgets.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\examples\imgui_impl_dx11.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImGui\examples\imgui_impl_win32.cpp">
+      <Filter>ImGui</Filter>
+    </ClCompile>
+    <ClCompile Include="ImguiManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FreeState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MenuState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -81,6 +111,39 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DxgiInfoManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imgui_internal.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imstb_rectpack.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imstb_textedit.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\imstb_truetype.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\examples\imgui_impl_dx11.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImGui\examples\imgui_impl_win32.h">
+      <Filter>ImGui</Filter>
+    </ClInclude>
+    <ClInclude Include="ImguiManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EngineState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FreeState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MenuState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
