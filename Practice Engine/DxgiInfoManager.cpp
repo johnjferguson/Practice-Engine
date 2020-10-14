@@ -1,8 +1,11 @@
 #include "DxgiInfoManager.h"
 #include "Graphics.h"
 #include "Assert.h"
+#include <algorithm>
 
 #pragma comment(lib, "dxguid.lib")
+
+DxgiInfoManager DxgiInfoManager::infoManager;
 
 DxgiInfoManager::DxgiInfoManager()
 {
@@ -23,6 +26,11 @@ DxgiInfoManager::DxgiInfoManager()
         ASSERT_LAST_ERROR();
     }
     DxgiGetDebugInterface(__uuidof(IDXGIInfoQueue),&pDxgiInfoQueue);
+}
+
+DxgiInfoManager* DxgiInfoManager::Instance()
+{
+    return &infoManager;
 }
 
 void DxgiInfoManager::Set()
@@ -52,4 +60,13 @@ std::vector<std::wstring> DxgiInfoManager::GetMessages() const
 
 
     return messages;
+}
+
+std::wstring DxgiInfoManager::GetConcatenatedMessages() const
+{
+    std::vector<std::wstring> messages = GetMessages();
+    std::wstring message;
+    std::for_each(messages.begin(), messages.end(), [&](const std::wstring& msg) { message = msg + L"\n"; });
+
+    return std::move(message);
 }

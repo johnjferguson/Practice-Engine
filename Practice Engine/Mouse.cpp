@@ -47,6 +47,12 @@ bool Mouse::RightIsPressed() const
 	return rightIsPressed;
 }
 
+void Mouse::SetWindowDimension(int width_in, int height_in)
+{
+	width = width_in;
+	height = height_in;
+}
+
 void Mouse::Flush()
 {
 	events = std::queue<Event>();

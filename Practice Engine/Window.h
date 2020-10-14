@@ -5,6 +5,7 @@
 #include <optional>
 #include "Graphics.h"
 #include <memory>
+#include <unordered_map>
 
 class Window
 {
@@ -31,17 +32,32 @@ public:
 		R1920X1080,
 		R1280X720,
 		R640X480,
+		R480X640,
 		FULLSCREEN
+	};
+	enum class Style
+	{
+		INVALID,
+		WINDOWED,
+		BORDERLESS
+	};
+	struct Dimension
+	{
+		int width;
+		int height;
 	};
 public:
 	Window(Window::Resolution resolution, const wchar_t* name);
 	~Window();
 	Window(const Window&) = delete;
-	void SetFullscreen(bool fullscreen);
 	Window& operator=(const Window&) = delete;
 	std::optional<int> ProcessMessages();
 	Graphics& Gfx();
+	void SetResolution(Window::Resolution resolution_in);
 	Window::Resolution GetResolution() const;
+	Window::Dimension GetDimension(Window::Resolution resolution) const;
+	void SetStyle(Window::Style style_in);
+	Window::Style GetStyle() const;
 	HWND GetHWnd();
 private:
 	static LRESULT CALLBACK HandleThunk(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
@@ -51,16 +67,7 @@ public:
 	Keyboard kbd;
 private:
 	Window::Resolution resolution;
-	int width;
-	int height;
-	// width and height have to be defined before mouse
+	Window::Style style;
 	HWND hWnd;
-	std::unique_ptr<Graphics> pGraphics;
-
-	// temp
-	HWND m_hWindow;
-	RECT m_WindowRect;
-	uint32_t m_Width;
-	uint32_t m_Height;
-	bool m_Fullscreen = false;
+	std::unique_ptr<Graphics> m_graphics;
 };

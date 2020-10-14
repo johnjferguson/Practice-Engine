@@ -172,10 +172,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assert.h" />
+    <ClInclude Include="Debug.h" />
     <ClInclude Include="DxgiInfoManager.h" />
     <ClInclude Include="Engine.h" />
     <ClInclude Include="EngineState.h" />
     <ClInclude Include="FreeState.h" />
+    <ClInclude Include="Geometry.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="ImguiManager.h" />
     <ClInclude Include="ImGui\examples\imgui_impl_dx11.h" />
@@ -185,6 +187,7 @@
     <ClInclude Include="ImGui\imstb_rectpack.h" />
     <ClInclude Include="ImGui\imstb_textedit.h" />
     <ClInclude Include="ImGui\imstb_truetype.h" />
+    <ClInclude Include="IndexedTriangleList.h" />
     <ClInclude Include="IntervalTimer.h" />
     <ClInclude Include="Keyboard.h" />
     <ClInclude Include="LeanWindows.h" />

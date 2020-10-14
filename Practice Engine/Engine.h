@@ -31,7 +31,7 @@ private:
 	ImguiManager imgui;
 	std::unique_ptr<Window> pWnd;
 	IntervalTimer timer;
-	// state stack
+	// all engine states are singletons so raw pointers are fine
 	std::vector<EngineState*> states;
 	// states
 	bool imguiDemoEnabled = false;

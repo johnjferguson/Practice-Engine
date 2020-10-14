@@ -45,88 +45,44 @@ Window::WindowClass::~WindowClass()
 	UnregisterClass(name, hInstance);
 }
 
+
 Window::Window(Window::Resolution resolution, const wchar_t * name)
 	:
-	mouse(width, height),
+	mouse(GetDimension(resolution).width, GetDimension(resolution).height),
 	resolution(resolution)
 {
-	// get the screen resolution to center the window
-	HMONITOR hmon = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
-	MONITORINFO mi = {sizeof(mi)};
-	GetMonitorInfoW(hmon, &mi);
-	int left = mi.rcMonitor.left;
-	int right = mi.rcMonitor.right;
-	int top = mi.rcMonitor.top;
-	int bottom = mi.rcMonitor.bottom;
+	const Dimension dimension = GetDimension(resolution);
+	const Dimension monitor_dimension = GetDimension(Window::Resolution::FULLSCREEN);
 
-	RECT desktop;
-	const HWND hDesktop = GetDesktopWindow();
-	GetWindowRect(hDesktop, &desktop);
-
-	switch (resolution)
-	{
-	case Window::Resolution::R1920X1080:
-		width = 1920;
-		height = 1080;
-		break;
-	case Window::Resolution::R1280X720:
-		width = 1280;
-		height = 720;
-		break;
-	case Window::Resolution::R640X480:
-		width = 640;
-		height = 480;
-		break;
-	case Window::Resolution::FULLSCREEN:
-		width = 1936;
-		height = 1096;
-		break;
-	default:
-		assert(false && "Window::Window bad resolution");
-		break;
-	}
-
-	//assert(width <= desktop.right && height <= desktop.bottom && width > 0 && height > 0 && "incorrect resolution");
-
+	// center the window in the monitor
 	RECT rect;
-	//rect.left = (desktop.right - width) / 2;
-	//rect.top = (desktop.bottom - height) / 2;
-	rect.left = 0;
-	rect.top = 0;
-	rect.right  = width  + rect.left;
-	rect.bottom = height + rect.top;
-
-	AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, FALSE);
-
-	ASSERT_LAST_ERROR();
+	rect.left = (monitor_dimension.width - dimension.width) / 2;
+	rect.top = (monitor_dimension.height - dimension.height) / 2;
+	rect.right  = dimension.width  + rect.left;
+	rect.bottom = dimension.height + rect.top;
 
 	hWnd = CreateWindowEx(
 		0, WindowClass::GetName(),
 		L"Practice Engine Window",
-		WS_OVERLAPPEDWINDOW,
-		rect.left, rect.top, width, height,
+		0,
+		rect.left, rect.top, dimension.width, dimension.height,
 		nullptr, nullptr, WindowClass::GetInstance(), this
 	);
 
-	m_hWindow = hWnd;
-
 	ASSERT_LAST_ERROR();
 
+	style = Window::Style::WINDOWED;
+	m_graphics = std::make_unique<Graphics>(hWnd, style == Window::Style::WINDOWED, dimension.width, dimension.height);
+	SetResolution(resolution);
+	
 	// set window api information to be able to use member functions
 	SetWindowLongPtr(hWnd, GWLP_USERDATA, reinterpret_cast<LONG_PTR>(this));
 
 	// make window visable
 	ShowWindow(hWnd, SW_SHOW);
 
-
-	// create directx graphics object
-	pGraphics = std::make_unique<Graphics>(hWnd, width, height);
-	
 	// init imgui for win32
 	ImGui_ImplWin32_Init(hWnd);
-
-	if (Window::Resolution::FULLSCREEN == resolution)
-		SetFullscreen(true);
 }
 
 Window::~Window()
@@ -151,12 +107,83 @@ std::optional<int> Window::ProcessMessages()
 
 Graphics & Window::Gfx()
 {
-	return *pGraphics;
+	return *m_graphics;
 }
 
 Window::Resolution Window::GetResolution() const
 {
 	return resolution;
+}
+
+void Window::SetResolution(Window::Resolution resolution_in)
+{
+	Dimension dimension = GetDimension(resolution_in);
+	Dimension monitor_dimension = GetDimension(Window::Resolution::FULLSCREEN);
+
+	HWND hWndInsertAfter = 0;
+	UINT windowStyle = 0;
+
+	switch (style)
+	{
+	case Window::Style::WINDOWED:
+		hWndInsertAfter = HWND_NOTOPMOST;
+		windowStyle = WS_OVERLAPPEDWINDOW & ~(WS_SYSMENU | WS_THICKFRAME);
+		break;
+	case Window::Style::BORDERLESS:
+		hWndInsertAfter = HWND_TOPMOST;
+		windowStyle = WS_POPUPWINDOW;
+		break;
+	default:
+		assert(false && "Window::SetResolution() unhandled style.");
+		break;
+	}
+
+	RECT rect;
+	rect.left = (monitor_dimension.width - dimension.width) / 2;
+	rect.right = rect.left + dimension.width;
+	rect.top = (monitor_dimension.height - dimension.height) / 2;
+	rect.bottom = rect.top + dimension.height;
+
+	assert(rect.left >= 0 && rect.top >= 0 && "Window::SetResolution() bad resolution");
+
+	AdjustWindowRect(&rect, windowStyle, false);
+
+	SetWindowLongPtr(hWnd, GWL_STYLE, windowStyle);
+
+	bool b = SetWindowPos(hWnd, hWndInsertAfter,
+		rect.left,
+		rect.top,
+		rect.right - rect.left,
+		rect.bottom - rect.top,
+		SWP_FRAMECHANGED | SWP_NOACTIVATE);
+
+
+	GetWindowRect(hWnd, &rect);
+
+	int j = 0;
+	// re-create the graphics object since buffer size has changed
+	m_graphics->WindowSizeChange(hWnd, dimension.width, dimension.height, style == Window::Style::WINDOWED);
+
+	// set window dimensions for the mouse so normal will be correct
+	mouse.SetWindowDimension(dimension.width, dimension.height);
+	
+	resolution = resolution_in;
+
+	ShowWindow(hWnd, SW_SHOW);
+}
+
+void Window::SetStyle(Window::Style style_in)
+{
+	if (style_in != style)
+	{
+		style = style_in;
+		SetResolution(resolution);
+	}
+}
+
+Window::Style Window::GetStyle() const
+{
+	return style;
 }
 
 HWND Window::GetHWnd()
@@ -212,18 +239,41 @@ LRESULT Window::Handle(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		kbd.OnKeyRelease((unsigned char)wParam);
 		break;
 	case WM_GETMINMAXINFO:
-		MINMAXINFO* mmi = (MINMAXINFO*)lParam;
-		int x = mmi->ptMaxSize.x;
-		int y = mmi->ptMaxSize.y;
-		int xx = mmi->ptMaxPosition.x;
-		int yy = mmi->ptMaxPosition.y;
-		int k = 2;
 		break;
 	}
-
 	return DefWindowProc(hWnd, msg, wParam, lParam);
 }
 
+Window::Dimension Window::GetDimension(Window::Resolution resolution) const
+{
+	HMONITOR hmon = MonitorFromWindow(hWnd, MONITOR_DEFAULTTONEAREST);
+	MONITORINFO mi = { sizeof(mi) };
+	GetMonitorInfoW(hmon, &mi);
+
+	switch (resolution)
+	{
+	case Window::Resolution::R1920X1080:
+		return { 1920, 1080 };
+		break;
+	case Window::Resolution::R1280X720:
+		return { 1280, 720 };
+		break;
+	case Window::Resolution::R640X480:
+		return { 640, 480 };
+		break;
+	case Window::Resolution::R480X640:
+		return { 480, 640 };
+		break;
+	case Window::Resolution::FULLSCREEN:
+		return { mi.rcMonitor.right - mi.rcMonitor.left, mi.rcMonitor.bottom - mi.rcMonitor.top };
+		break;
+	default:
+		return { 0, 0 };
+		break;
+	}
+}
+
+/*
 void Window::SetFullscreen(bool fullscreen)
 {
 	if (m_Fullscreen != fullscreen)
@@ -284,6 +334,7 @@ void Window::SetFullscreen(bool fullscreen)
 	}
 
 }
+*/
 
 
 

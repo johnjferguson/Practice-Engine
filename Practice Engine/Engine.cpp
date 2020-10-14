@@ -87,10 +87,7 @@ void Engine::ShowImguiDemoWindow()
 
 void Engine::ChangeWindowResolution(Window::Resolution resolution)
 {
-	Wnd().Gfx().EndFrame();
-	pWnd = nullptr;
-	pWnd = std::make_unique<Window>(resolution, windowName);
-	Wnd().Gfx().BeginFrame();
+	Wnd().SetResolution(resolution);
 }
 
 Window& Engine::Wnd()

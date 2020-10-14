@@ -1,5 +1,6 @@
 #include "MenuState.h"
 #include "ImGui/imgui.h"
+#include <sstream>
 
 MenuState MenuState::menuState;
 
@@ -58,18 +59,35 @@ void MenuState::Render(Engine& engine)
 
 	if (ImGui::RadioButton("640 x 480", engine.Wnd().GetResolution() == Window::Resolution::R640X480))
 	{
-		engine.ChangeWindowResolution(Window::Resolution::R640X480);
+		engine.Wnd().SetStyle(Window::Style::WINDOWED);
+		engine.Wnd().SetResolution(Window::Resolution::R640X480);
+	}
+	else if (ImGui::RadioButton("480 x 640", engine.Wnd().GetResolution() == Window::Resolution::R480X640))
+	{
+		engine.Wnd().SetStyle(Window::Style::WINDOWED);
+		engine.Wnd().SetResolution(Window::Resolution::R480X640);
 	}
 	else if (ImGui::RadioButton("1280 x 720", engine.Wnd().GetResolution() == Window::Resolution::R1280X720))
 	{
-		engine.ChangeWindowResolution(Window::Resolution::R1280X720);
+		engine.Wnd().SetStyle(Window::Style::WINDOWED);
+		engine.Wnd().SetResolution(Window::Resolution::R1280X720);
 	}
 	else if (ImGui::RadioButton("1920 x 1080", engine.Wnd().GetResolution() == Window::Resolution::R1920X1080))
 	{
-		engine.ChangeWindowResolution(Window::Resolution::R1920X1080);
+		engine.Wnd().SetStyle(Window::Style::WINDOWED);
+		engine.Wnd().SetResolution(Window::Resolution::R1920X1080);
 	}
 	else if (ImGui::RadioButton("Fullscreen", engine.Wnd().GetResolution() == Window::Resolution::FULLSCREEN))
 	{
-		engine.ChangeWindowResolution(Window::Resolution::FULLSCREEN);
+		engine.Wnd().SetStyle(Window::Style::BORDERLESS);
+		engine.Wnd().SetResolution(Window::Resolution::FULLSCREEN);
 	}
+	
+	RECT rect;
+	GetWindowRect(engine.Wnd().GetHWnd(), &rect);
+	std::stringstream ss;
+	ss << "left: " << rect.left << std::endl << "right: " << rect.right << std::endl << "top: " << rect.top << std::endl << "bottom: " << rect.bottom << std::endl
+		<< "width: " << rect.right - rect.left << std::endl << "height: " << rect.bottom - rect.top;
+
+	ImGui::Text(ss.str().c_str());
 }

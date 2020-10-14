@@ -35,6 +35,7 @@ public:
 	std::pair<int, int> Pos() const;
 	bool LeftIsPressed() const;
 	bool RightIsPressed() const;
+	void SetWindowDimension(int width_in, int height_in);
 	void Flush();
 private:
 	void OnLeftPress(int x_in, int y_in);

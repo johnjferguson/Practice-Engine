@@ -1,64 +1,64 @@
 #include "Graphics.h"
 #include "Assert.h"
 #include <d3dcompiler.h>
+#include <wincodec.h>
 #include "ImGui/examples/imgui_impl_dx11.h"
 #include "ImGui/examples//imgui_impl_win32.h"
+#include "Geometry.h"
 
 #pragma comment(lib, "d3d11.lib" )
 #pragma comment(lib, "D3DCompiler.lib")
 
 namespace wrl = Microsoft::WRL;
 
-Graphics::Graphics(HWND hWnd, int width, int height)
+Graphics::Graphics(HWND hWnd, bool windowed, int width, int height)
 	:
-	width(width),
-	height(height)
+	m_width(width),
+	m_height(height)
 {
-	DXGI_SWAP_CHAIN_DESC sd = {};
-	sd.BufferDesc.Width = 0;
-	sd.BufferDesc.Height = 0;
-	sd.BufferDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-	sd.BufferDesc.RefreshRate.Numerator = 0;
-	sd.BufferDesc.RefreshRate.Denominator = 0;
-	sd.BufferDesc.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
-	sd.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
-	// anti aliasing
-	sd.SampleDesc.Count = 1;
-	sd.SampleDesc.Quality = 0;
-	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-	sd.BufferCount = 2;
-	sd.OutputWindow =  hWnd;
-	sd.Windowed = TRUE;
-	sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-	sd.Flags = 0;
-
-	// create front / back buffers
-	UINT deviceFlag = 0u;
+	// This flag is required for compatibility with Direct2D
+	UINT creationFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
 #if _DEBUG
-	deviceFlag |= D3D11_CREATE_DEVICE_DEBUG;
+	creationFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
-	
-	ASSERT_HRESULT_INFOQUEUE(D3D11CreateDeviceAndSwapChain(
-		nullptr,
-		D3D_DRIVER_TYPE_HARDWARE,
-		nullptr,
-		deviceFlag,
-		nullptr,
-		0,
-		D3D11_SDK_VERSION,
-		&sd,
-		&pSwap,
-		&pDevice,
-		nullptr,
-		&pContext
+
+	D3D_FEATURE_LEVEL featureLevels[] =
+	{
+		D3D_FEATURE_LEVEL_12_1,
+		D3D_FEATURE_LEVEL_12_0,
+		D3D_FEATURE_LEVEL_11_1,
+		D3D_FEATURE_LEVEL_11_0,
+		D3D_FEATURE_LEVEL_10_1,
+		D3D_FEATURE_LEVEL_10_0,
+		D3D_FEATURE_LEVEL_9_3,
+		D3D_FEATURE_LEVEL_9_2,
+		D3D_FEATURE_LEVEL_9_1
+	};
+
+	wrl::ComPtr<ID3D11Device> device;
+	wrl::ComPtr<ID3D11DeviceContext> context;
+
+	ASSERT_HR(D3D11CreateDevice(
+		nullptr,					// Specify nullptr to use the default adapter.
+		D3D_DRIVER_TYPE_HARDWARE,	// Create a device using the hardware graphics driver.
+		0,							// Should be 0 unless the driver is D3D_DRIVER_TYPE_SOFTWARE.
+		creationFlags,				// Set debug and Direct2D compatibility flags.
+		featureLevels,				// List of feature levels this app can support.
+		ARRAYSIZE(featureLevels),	// Size of the list above.
+		D3D11_SDK_VERSION,			// Always set this to D3D11_SDK_VERSION for Microsoft Store apps.
+		&device,					// Returns the Direct3D device created.
+		&m_featureLevel,			// Returns feature level of device created.
+		&context					// Returns the device immediate context.
 	));
 
-	wrl::ComPtr<ID3D11Texture2D> pBackBuffer;
-	ASSERT_HRESULT_INFOQUEUE(pSwap->GetBuffer(0, __uuidof(ID3D11Texture2D), &pBackBuffer));
-	ASSERT_HRESULT_INFOQUEUE(pDevice->CreateRenderTargetView(pBackBuffer.Get(), nullptr, &pTarget));
+	// store pointers in member functions since they required createDevice required device and not device3
+	ASSERT_HR(device.As(&m_device));
+	ASSERT_HR(context.As(&m_context));
+	
+	CreateWindowSizeDependentResources(hWnd, windowed);
 
 	// init imgui directx11 impl
-	ImGui_ImplDX11_Init(pDevice.Get(), pContext.Get());
+	ImGui_ImplDX11_Init(m_device.Get(), m_context.Get());
 }
 
 Graphics::~Graphics()
@@ -66,14 +66,14 @@ Graphics::~Graphics()
 	ImGui_ImplDX11_Shutdown();
 }
 
-ID3D11Device* Graphics::GetDevice()
+ID3D11Device3* Graphics::GetDevice()
 {
-	return pDevice.Get();
+	return m_device.Get();
 }
 
-ID3D11DeviceContext* Graphics::GetContext()
+ID3D11DeviceContext3* Graphics::GetContext()
 {
-	return pContext.Get();
+	return m_context.Get();
 }
 
 void Graphics::DrawTestTriangle()
@@ -82,6 +82,7 @@ void Graphics::DrawTestTriangle()
 	{
 		float x;
 		float y;
+		float z;
 	};
 
 	const Vertex vertices[] =
@@ -90,6 +91,8 @@ void Graphics::DrawTestTriangle()
 		{0.5f, -0.5f},
 		{-0.5f, -0.5f}
 	};
+
+	IndexedTriangleList<Vertex> cube = MakeCube<Vertex>(1.0f, 1.0f, 1.0f);
 
 
 	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
@@ -102,19 +105,19 @@ void Graphics::DrawTestTriangle()
 	bd.StructureByteStride = sizeof(Vertex);
 	D3D11_SUBRESOURCE_DATA srd = {};
 	srd.pSysMem = vertices;
-	ASSERT_HRESULT_INFOQUEUE( pDevice->CreateBuffer(&bd, &srd, &pVertexBuffer));
+	ASSERT_HR_INFO( m_device->CreateBuffer(&bd, &srd, &pVertexBuffer));
 	const UINT stride = sizeof(Vertex);
 	const UINT offset = 0u;
 
-	ASSERT_INFOQUEUE(pContext->IASetVertexBuffers(0u, 1u, pVertexBuffer.GetAddressOf(), &stride, &offset));
+	ASSERT_INFO(m_context->IASetVertexBuffers(0u, 1u, pVertexBuffer.GetAddressOf(), &stride, &offset));
 
 	// vertex shader
 	wrl::ComPtr<ID3D11VertexShader> pVertexShader;
 	wrl::ComPtr<ID3DBlob> pBlob;
-	ASSERT_HRESULT_INFOQUEUE(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
-	ASSERT_HRESULT_INFOQUEUE(pDevice->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
+	ASSERT_HR_INFO(D3DReadFileToBlob(L"VertexShader.cso", &pBlob));
+	ASSERT_HR_INFO(m_device->CreateVertexShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pVertexShader));
 
-	ASSERT_INFOQUEUE(pContext->VSSetShader(pVertexShader.Get(), nullptr, 0));
+	ASSERT_INFO(m_context->VSSetShader(pVertexShader.Get(), nullptr, 0));
 
 	// input layout
 	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
@@ -122,38 +125,31 @@ void Graphics::DrawTestTriangle()
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},
 	};
-	ASSERT_HRESULT_INFOQUEUE(pDevice->CreateInputLayout(ied, 1u, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
+	ASSERT_HR_INFO(m_device->CreateInputLayout(ied, 1u, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
 
-	pContext->IASetInputLayout(pInputLayout.Get());
+	m_context->IASetInputLayout(pInputLayout.Get());
 
 	//pixel shader
 	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
 
-	ASSERT_HRESULT_INFOQUEUE(D3DReadFileToBlob(L"PixelShader.cso", &pBlob));
-	ASSERT_HRESULT_INFOQUEUE(pDevice->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
+	ASSERT_HR_INFO(D3DReadFileToBlob(L"PixelShader.cso", &pBlob));
+	ASSERT_HR_INFO(m_device->CreatePixelShader(pBlob->GetBufferPointer(), pBlob->GetBufferSize(), nullptr, &pPixelShader));
 
-	ASSERT_INFOQUEUE(pContext->PSSetShader(pPixelShader.Get(),nullptr, 0));
+	ASSERT_INFO(m_context->PSSetShader(pPixelShader.Get(),nullptr, 0));
 
 	// set topology
-	pContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	m_context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 
 	// bind render target
-	pContext->OMSetRenderTargets(1u, pTarget.GetAddressOf(), nullptr);
+	m_context->OMSetRenderTargets(1u, m_target.GetAddressOf(), nullptr);
 
 	// configure viewport
 	D3D11_RENDER_TARGET_VIEW_DESC rtvd;
-	ASSERT_INFOQUEUE(pTarget->GetDesc(&rtvd));
+	ASSERT_INFO(m_target->GetDesc(&rtvd));
 
-	D3D11_VIEWPORT vp;
-	vp.Width = (float)width;
-	vp.Height = (float)height;
-	vp.MinDepth = 0;
-	vp.MaxDepth = 1;
-	vp.TopLeftX = 0;
-	vp.TopLeftY = 0;
-	pContext->RSSetViewports(1u, &vp);
+	m_context->RSSetViewports(1u, &m_viewport);
 
-	ASSERT_INFOQUEUE(pContext->Draw(std::size( vertices), 0u));
+	ASSERT_INFO(m_context->Draw(std::size( vertices), 0u));
 }
 
 void Graphics::BeginFrame()
@@ -174,7 +170,7 @@ void Graphics::EndFrame()
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 	}
 
-	ASSERT_HRESULT_INFOQUEUE(pSwap->Present(1u, 0u));
+	ASSERT_HR_INFO(m_swap->Present(1u, 0u));
 }
 
 void Graphics::EnableImgui()
@@ -192,15 +188,152 @@ bool Graphics::IsImguiEnabled() const
 	return imguiEnabled;
 }
 
+void Graphics::WindowSizeChange(HWND hWnd, int width, int height, bool windowed)
+{
+	m_width = width;
+	m_height = height;
+
+	CreateWindowSizeDependentResources(hWnd, windowed);
+}
+
+void Graphics::CreateWindowSizeDependentResources(HWND hWnd, bool windowed)
+{
+	// Clear the previous window size specific context.
+	ID3D11RenderTargetView* nullViews[] = { nullptr };
+	m_context->OMSetRenderTargets(ARRAYSIZE(nullViews), nullViews, nullptr);
+	m_target = nullptr;
+	m_stencil = nullptr;
+	m_context->Flush1(D3D11_CONTEXT_TYPE_ALL, nullptr);
+
+	if (m_swap != nullptr)
+	{
+		ASSERT_HR(m_swap->ResizeBuffers(
+			2, // Double-buffered swap chain.
+			m_width,
+			m_height,
+			DXGI_FORMAT_B8G8R8A8_UNORM,
+			0
+		));
+	}
+	else
+	{
+		DXGI_SWAP_CHAIN_DESC1 sd = {};
+		DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsd = {};
+		DXGI_RATIONAL rational = {};
+
+		sd.Width = m_width;
+		sd.Height = m_height;
+		sd.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+		sd.Stereo = false;
+		sd.SampleDesc.Count = 1;												  // anti aliasing
+		sd.SampleDesc.Quality = 0;                                               
+		sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+		sd.BufferCount = 2;
+		sd.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;                            // All Microsoft Store apps must use DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL
+		sd.Flags = 0;
+		sd.Scaling = DXGI_SCALING_NONE;
+		sd.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+
+		rational.Denominator = 0;
+		rational.Numerator = 0;
+		fsd.RefreshRate.Numerator = 0;
+		fsd.RefreshRate.Denominator = 0;
+		fsd.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
+		fsd.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
+		fsd.Windowed = windowed;
+
+		// This sequence obtains the DXGI factory that was used to create the Direct3D device above.
+		wrl::ComPtr<IDXGIDevice3> dxgiDevice;
+		ASSERT_HR(
+			m_device.As(&dxgiDevice)
+		);
+
+		wrl::ComPtr<IDXGIAdapter> dxgiAdapter;
+		ASSERT_HR(
+			dxgiDevice->GetAdapter(&dxgiAdapter)
+		);
+
+		wrl::ComPtr<IDXGIFactory4> dxgiFactory;
+		ASSERT_HR(
+			dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory))
+		);
+
+		wrl::ComPtr<IDXGISwapChain1> swapChain;
+		ASSERT_HR(
+			dxgiFactory->CreateSwapChainForHwnd(
+				m_device.Get(),
+				hWnd,
+				&sd,
+				&fsd,
+				nullptr,
+				&swapChain
+			)
+		);
+
+		ASSERT_HR(
+			swapChain.As(&m_swap)
+		);
+		
+		// Ensure that DXGI does not queue more than one frame at a time. This both reduces latency and
+		// ensures that the application will only render after each VSync, minimizing power consumption.
+		ASSERT_HR(
+			dxgiDevice->SetMaximumFrameLatency(1)
+		);
+	}
+
+	wrl::ComPtr<ID3D11Texture2D1> backBuffer;
+	ASSERT_HR(m_swap->GetBuffer(0, __uuidof(ID3D11Texture2D1), &backBuffer));
+
+	ASSERT_HR(
+		m_device->CreateRenderTargetView(
+			backBuffer.Get(),
+			nullptr,
+			&m_target
+		)
+	);
+
+	// Create a depth stencil view for use with 3D rendering if needed.
+	CD3D11_TEXTURE2D_DESC1 depthStencilDesc(
+		DXGI_FORMAT_D24_UNORM_S8_UINT,
+		m_width,
+		m_height,
+		1, // This depth stencil view has only one texture.
+		1, // Use a single mipmap level.
+		D3D11_BIND_DEPTH_STENCIL
+	);
+
+	wrl::ComPtr<ID3D11Texture2D1> depthStencil;
+	ASSERT_HR(
+		m_device->CreateTexture2D1(
+			&depthStencilDesc,
+			nullptr,
+			&depthStencil
+		)
+	);
+
+	CD3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc(D3D11_DSV_DIMENSION_TEXTURE2D);
+	ASSERT_HR(
+		m_device->CreateDepthStencilView(
+			depthStencil.Get(),
+			&depthStencilViewDesc,
+			&m_stencil
+		)
+	);
+
+	// Set the 3D rendering viewport to target the entire window.
+	m_viewport = CD3D11_VIEWPORT(
+		0.0f,
+		0.0f,
+		float(m_width),
+		float(m_height)
+	);
+
+	m_context->RSSetViewports(1, &m_viewport);
+}
+
 void Graphics::ClearBuffer(float r, float g, float b)
 {
 	const float color[] = { r,g,b };
-	ASSERT_INFOQUEUE(pContext->ClearRenderTargetView(pTarget.Get(), color));
+	ASSERT_INFO(m_context->ClearRenderTargetView(m_target.Get(), color));
 }
 
-#if _DEBUG
-DxgiInfoManager& Graphics::GetInfoManager()
-{
-	return infoManager;
-}
-#endif
