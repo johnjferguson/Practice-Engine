@@ -2,6 +2,8 @@
 #include "Assert.h"
 #include <d3dcompiler.h>
 #include <wincodec.h>
+#include <random>
+#include <DirectXMath.h>
 #include "ImGui/examples/imgui_impl_dx11.h"
 #include "ImGui/examples//imgui_impl_win32.h"
 #include "Geometry.h"
@@ -10,6 +12,7 @@
 #pragma comment(lib, "D3DCompiler.lib")
 
 namespace wrl = Microsoft::WRL;
+namespace dx = DirectX;
 
 Graphics::Graphics(HWND hWnd, bool windowed, int width, int height)
 	:
@@ -78,22 +81,40 @@ ID3D11DeviceContext3* Graphics::GetContext()
 
 void Graphics::DrawTestTriangle()
 {
+	std::mt19937 rng(std::random_device{}());
+	std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+
+	struct CBuff
+	{
+		dx::XMMATRIX transform;
+		dx::XMMATRIX projection;
+	};
+
+	ImGui::SliderFloat("z", &m_z, 0.0f, 20.0f);
+	ImGui::SliderFloat("roll", &m_roll, -3.14f, 3.14f);
+	ImGui::SliderFloat("pitch", &m_pitch, -3.14f, 3.14f);
+	ImGui::SliderFloat("yaw", &m_yaw, -3.14f, 3.14f);
+
+	CBuff cBuff = { dx::XMMatrixRotationRollPitchYaw(m_pitch, m_yaw, m_roll) * dx::XMMatrixTranslation(0.0f, 0.0f, m_z), dx::XMMatrixPerspectiveFovLH(1.5707, 1280.0f / 720.0f, 1.0f, 100.0f )};
+
 	struct Vertex
 	{
 		float x;
 		float y;
 		float z;
-	};
-
-	const Vertex vertices[] =
-	{
-		{0.0f, 0.5f},
-		{0.5f, -0.5f},
-		{-0.5f, -0.5f}
+		float r;
+		float g;
+		float b;
 	};
 
 	IndexedTriangleList<Vertex> cube = MakeCube<Vertex>(1.0f, 1.0f, 1.0f);
 
+	for (auto& v : cube.vertices)
+	{
+		v.r = dist(rng);
+		v.g = dist(rng);
+		v.b = dist(rng);
+	}
 
 	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
 	D3D11_BUFFER_DESC bd = {};
@@ -101,10 +122,10 @@ void Graphics::DrawTestTriangle()
 	bd.Usage = D3D11_USAGE_DEFAULT;
 	bd.CPUAccessFlags = 0u;
 	bd.MiscFlags = 0u;
-	bd.ByteWidth = sizeof(vertices);
+	bd.ByteWidth = cube.vertices.size() * sizeof(Vertex);
 	bd.StructureByteStride = sizeof(Vertex);
 	D3D11_SUBRESOURCE_DATA srd = {};
-	srd.pSysMem = vertices;
+	srd.pSysMem = cube.vertices.data();
 	ASSERT_HR_INFO( m_device->CreateBuffer(&bd, &srd, &pVertexBuffer));
 	const UINT stride = sizeof(Vertex);
 	const UINT offset = 0u;
@@ -123,9 +144,10 @@ void Graphics::DrawTestTriangle()
 	wrl::ComPtr<ID3D11InputLayout> pInputLayout;
 	const D3D11_INPUT_ELEMENT_DESC ied[] =
 	{
-		{"POSITION", 0, DXGI_FORMAT_R32G32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},
+		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},
+		{"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
 	};
-	ASSERT_HR_INFO(m_device->CreateInputLayout(ied, 1u, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
+	ASSERT_HR_INFO(m_device->CreateInputLayout(ied, 2u, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
 
 	m_context->IASetInputLayout(pInputLayout.Get());
 
@@ -143,13 +165,41 @@ void Graphics::DrawTestTriangle()
 	// bind render target
 	m_context->OMSetRenderTargets(1u, m_target.GetAddressOf(), nullptr);
 
+	wrl::ComPtr<ID3D11Buffer> pConstantBuffer;
+	D3D11_BUFFER_DESC cbd;
+	cbd.ByteWidth = sizeof(CBuff);
+	cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbd.Usage = D3D11_USAGE_DEFAULT;
+	cbd.CPUAccessFlags = 0u;
+	cbd.MiscFlags = 0u;
+	cbd.StructureByteStride = sizeof(CBuff);
+	D3D11_SUBRESOURCE_DATA csrd = {};
+	csrd.pSysMem = &cBuff;
+
+	ASSERT_HR_INFO(m_device->CreateBuffer(&cbd, &csrd, &pConstantBuffer));
+	m_context->VSSetConstantBuffers(0, 1, pConstantBuffer.GetAddressOf());
+
+	wrl::ComPtr<ID3D11Buffer> pIndexBuffer;
+	D3D11_BUFFER_DESC ibd;
+	ibd.ByteWidth = cube.indices.size() * sizeof(unsigned short);
+	ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	ibd.Usage = D3D11_USAGE_DEFAULT;
+	ibd.CPUAccessFlags = 0u;
+	ibd.MiscFlags = 0u;
+	ibd.StructureByteStride = sizeof(unsigned short);
+	D3D11_SUBRESOURCE_DATA isrd = {};
+	isrd.pSysMem = cube.indices.data();
+
+	ASSERT_HR_INFO(m_device->CreateBuffer(&ibd, &isrd, &pIndexBuffer));
+	m_context->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0);
+
 	// configure viewport
 	D3D11_RENDER_TARGET_VIEW_DESC rtvd;
 	ASSERT_INFO(m_target->GetDesc(&rtvd));
 
 	m_context->RSSetViewports(1u, &m_viewport);
 
-	ASSERT_INFO(m_context->Draw(std::size( vertices), 0u));
+	ASSERT_INFO(m_context->DrawIndexed(cube.indices.size(), 0, 0));
 }
 
 void Graphics::BeginFrame()

@@ -45,6 +45,13 @@ private:
 	int                 m_width;
 	int                 m_height;
 
+	// temp
+	float m_pitch = 0.0f;
+	float m_yaw = 0.0f;
+	float m_roll = 0.0f;
+
+	float m_z = 10.0f;
+
 private:
 	bool imguiEnabled = true;
 };
