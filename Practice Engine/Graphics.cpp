@@ -7,12 +7,14 @@
 #include "ImGui/examples/imgui_impl_dx11.h"
 #include "ImGui/examples//imgui_impl_win32.h"
 #include "Geometry.h"
+#include "DirectXTK/WICTextureLoader.h"
 
 #pragma comment(lib, "d3d11.lib" )
 #pragma comment(lib, "D3DCompiler.lib")
 
 namespace wrl = Microsoft::WRL;
 namespace dx = DirectX;
+
 
 Graphics::Graphics(HWND hWnd, bool windowed, int width, int height)
 	:
@@ -90,31 +92,44 @@ void Graphics::DrawTestTriangle()
 		dx::XMMATRIX projection;
 	};
 
-	ImGui::SliderFloat("z", &m_z, 0.0f, 20.0f);
-	ImGui::SliderFloat("roll", &m_roll, -3.14f, 3.14f);
-	ImGui::SliderFloat("pitch", &m_pitch, -3.14f, 3.14f);
-	ImGui::SliderFloat("yaw", &m_yaw, -3.14f, 3.14f);
 
-	CBuff cBuff = { dx::XMMatrixRotationRollPitchYaw(m_pitch, m_yaw, m_roll) * dx::XMMatrixTranslation(0.0f, 0.0f, m_z), dx::XMMatrixPerspectiveFovLH(1.5707, 1280.0f / 720.0f, 1.0f, 100.0f )};
+	// temp --------------------------------------
+	ImGui::SliderFloat("pitch", &m_pitch, -10, 10);
+	ImGui::SliderFloat("roll", &m_roll, -10, 10);
+	ImGui::SliderFloat("yaw", &m_yaw, -10, 10);
+
+	ImGui::SliderFloat("z", &m_z, 0, 20);
+	// ^------------------------------------------
+
+	CBuff cBuff = { dx::XMMatrixRotationRollPitchYaw(m_pitch, m_yaw, m_roll) * dx::XMMatrixTranslation(0.0f, 0.0f, m_z), dx::XMMatrixPerspectiveFovLH(1.5707, float(m_width) / float(m_height), 1.0f, 100.0f )};
 
 	struct Vertex
 	{
 		float x;
 		float y;
 		float z;
-		float r;
-		float g;
-		float b;
+		float u;
+		float v;
 	};
 
-	IndexedTriangleList<Vertex> cube = MakeCube<Vertex>(1.0f, 1.0f, 1.0f);
+	wrl::ComPtr<ID3D11Resource> pResource;
+	wrl::ComPtr<ID3D11ShaderResourceView> pResourceView;
+	wrl::ComPtr<ID3D11SamplerState> pSamplerState;
 
-	for (auto& v : cube.vertices)
-	{
-		v.r = dist(rng);
-		v.g = dist(rng);
-		v.b = dist(rng);
-	}
+	D3D11_SAMPLER_DESC ssd = {};
+	ssd.Filter = D3D11_FILTER_ANISOTROPIC;
+	ssd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+	ssd.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+	ssd.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+	
+
+	m_device->CreateSamplerState(&ssd, &pSamplerState);
+	m_context->PSSetSamplers(0, 1, pSamplerState.GetAddressOf());
+
+	ASSERT_HR_INFO(dx::CreateWICTextureFromFile(m_device.Get(), L"Images//grass.jpg", &pResource, &pResourceView));
+	m_context->PSSetShaderResources(0, 1, pResourceView.GetAddressOf());
+
+	IndexedTriangleList<Vertex> cube = MakeCube<Vertex>(1.0f, 1.0f, 1.0f);
 
 	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
 	D3D11_BUFFER_DESC bd = {};
@@ -145,7 +160,7 @@ void Graphics::DrawTestTriangle()
 	const D3D11_INPUT_ELEMENT_DESC ied[] =
 	{
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT,0,0,D3D11_INPUT_PER_VERTEX_DATA,0},
-		{"COLOR", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
+		{"TEXTURE", 0, DXGI_FORMAT_R32G32_FLOAT, 0, D3D11_APPEND_ALIGNED_ELEMENT, D3D11_INPUT_PER_VERTEX_DATA, 0}
 	};
 	ASSERT_HR_INFO(m_device->CreateInputLayout(ied, 2u, pBlob->GetBufferPointer(), pBlob->GetBufferSize(), &pInputLayout));
 
@@ -220,7 +235,7 @@ void Graphics::EndFrame()
 		ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
 	}
 
-	ASSERT_HR_INFO(m_swap->Present(1u, 0u));
+	ASSERT_HR_INFO(m_swap->Present(0u, 0u));
 }
 
 void Graphics::EnableImgui()

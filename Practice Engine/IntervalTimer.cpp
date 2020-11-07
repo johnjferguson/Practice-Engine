@@ -3,25 +3,27 @@
 #include <iostream>
 #include <iomanip>
 
-void IntervalTimer::Set(const std::string & interval_id)
+void IntervalTimer::Set(StringId id)
 {
-	if (intervals.find(interval_id) == intervals.end())
+	
+	if (intervals.find(id) == intervals.end())
 	{
-		intervals.insert({ interval_id, {std::chrono::steady_clock::now(), 0.0f, false} });
+		intervals.insert({ id, {std::chrono::steady_clock::now(), 0.0f, false} });
 	}
 	else
 	{
-		intervals[interval_id] = { std::chrono::steady_clock::now(), 0.0f, false };
+		intervals[id] = { std::chrono::steady_clock::now(), 0.0f, false };
 	}
+	
 }
 
-double IntervalTimer::End(const std::string & interval_id)
+double IntervalTimer::End(StringId id)
 {
 	// take time before somewhat expensive string hash
 	std::chrono::time_point<std::chrono::steady_clock> now = std::chrono::steady_clock::now();
 
-	std::unordered_map<std::string, IntervalData>::iterator
-		iter = intervals.find(interval_id);
+	std::unordered_map<StringId, IntervalData>::iterator
+		iter = intervals.find(id);
 
 	if (iter != intervals.end())
 	{
@@ -33,12 +35,12 @@ double IntervalTimer::End(const std::string & interval_id)
 	return 0.0f;
 }
 
-double IntervalTimer::Peek(const std::string & interval_id)
+double IntervalTimer::Peek(StringId id)
 {
 	std::chrono::time_point<std::chrono::steady_clock> now = std::chrono::steady_clock::now();
 
-	std::unordered_map<std::string, IntervalData>::iterator
-		iter = intervals.find(interval_id);
+	std::unordered_map<StringId, IntervalData>::iterator
+		iter = intervals.find(id);
 
 	if (iter != intervals.end())
 	{
@@ -51,6 +53,7 @@ double IntervalTimer::Peek(const std::string & interval_id)
 
 void IntervalTimer::Print() const
 {
+	/*
 	unsigned int max_length = 0u;
 	std::for_each(intervals.begin(), intervals.end(), [&](const std::pair<std::string, IntervalTimer::IntervalData>& data) 
 	{ 
@@ -67,4 +70,5 @@ void IntervalTimer::Print() const
 		}
 	}
 	);
+	*/
 }

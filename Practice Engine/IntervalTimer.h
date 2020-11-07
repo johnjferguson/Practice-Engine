@@ -2,6 +2,7 @@
 #include <chrono>
 #include <unordered_map>
 #include <string>
+#include "StringId.h"
 
 class IntervalTimer
 {
@@ -13,13 +14,13 @@ private:
 		bool closed = false;
 	};
 public:
-	void Set(const std::string& interval_id);
-	double End(const std::string& interval_id);
-	double Peek(const std::string& interval_id);
+	void Set(StringId id);
+	double End(StringId id);
+	double Peek(StringId id);
 	void Print() const;
 	void Clear();
 	// prevent rehashing
 	void Reserve(unsigned int n);
 private:
-	std::unordered_map<std::string, IntervalData> intervals;
+	std::unordered_map<StringId, IntervalData> intervals;
 };

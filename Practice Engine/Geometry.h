@@ -13,14 +13,14 @@ IndexedTriangleList<V> MakeCube(float length, float width, float height)
 
 	std::vector<V> vertices =
 	{
-		{-hw, -hh, -hl},
-		{-hw,  hh, -hl},
-		{ hw,  hh, -hl},
-		{ hw, -hh, -hl},
-		{-hw, -hh,  hl},
-		{-hw,  hh,  hl},
-		{ hw,  hh,  hl},
-		{ hw, -hh,  hl}
+		{-hw, -hh, -hl, 0.0f, 0.0f},
+		{-hw,  hh, -hl, 0.0f, 1.0f},
+		{ hw,  hh, -hl, 1.0f, 1.0f},
+		{ hw, -hh, -hl, 1.0f, 0.0f},
+		{-hw, -hh,  hl, 1.0f, 0.0f},
+		{-hw,  hh,  hl, 1.0f, 1.0f},
+		{ hw,  hh,  hl, 0.0f, 1.0f},
+		{ hw, -hh,  hl, 0.0f, 0.0f}
 	};
 
 	std::vector<unsigned short> indices =

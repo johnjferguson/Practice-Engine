@@ -5,6 +5,8 @@
 #include "FreeState.h"
 #include "MenuState.h"
 #include "Assert.h"
+#include "StringId.h"
+#include <utility>
 
 Engine::Engine()
 	:
@@ -21,11 +23,17 @@ Engine::Engine()
 
 int Engine::Start()
 {
-	timer.Set("dt");
+
+	timer.Set(SID("dt"));
 	std::optional<int> ecode;
 	while (!(ecode = pWnd->ProcessMessages()))
 	{
+		//auto dt = timer.End(HashString("dt"));
+		//timer.Set(HashString("dt"));
+
+
 		Wnd().Gfx().BeginFrame();
+		//ImGui::Text(std::to_string(dt*1000.0f).c_str());
 		states.back()->HandleEvents(*this);
 		states.back()->Update(*this);
 		states.back()->Render(*this);
@@ -97,7 +105,7 @@ Window& Engine::Wnd()
 
 void Engine::DoFrame()
 {
-	const float c = float(sin(timer.Peek("dt"))) / 2.0f + 0.5f;
+	const float c = 1.0f; //float(sin(timer.Peek("dt"))) / 2.0f + 0.5f;
 	Wnd().Gfx().ClearBuffer(c, 0.5f, 0.5f);
 	Wnd().Gfx().DrawTestTriangle();
 	ShowImguiDemoWindow();
