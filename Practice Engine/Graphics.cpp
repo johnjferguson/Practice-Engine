@@ -8,6 +8,8 @@
 #include "ImGui/examples//imgui_impl_win32.h"
 #include "Geometry.h"
 #include "DirectXTK/WICTextureLoader.h"
+#include "Assimp/code/Obj/ObjFileData.h"
+#include "Assimp/code/Obj/ObjFileImporter.h"
 
 #pragma comment(lib, "d3d11.lib" )
 #pragma comment(lib, "D3DCompiler.lib")
@@ -83,6 +85,14 @@ ID3D11DeviceContext3* Graphics::GetContext()
 
 void Graphics::DrawTestTriangle()
 {
+	// testing object file loading
+	std::vector<char> buff;
+	std::string path = "Models\\spider.mtl";
+	Assimp::ObjFile::Model model;
+	Assimp::ObjFileImporter importer;
+	//Assimp::ObjFileMtlImporter(buff, path, &model);
+
+
 	std::mt19937 rng(std::random_device{}());
 	std::uniform_real_distribution<float> dist(0.0f, 1.0f);
 

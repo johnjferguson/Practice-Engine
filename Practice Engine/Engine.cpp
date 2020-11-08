@@ -23,7 +23,6 @@ Engine::Engine()
 
 int Engine::Start()
 {
-
 	timer.Set(SID("dt"));
 	std::optional<int> ecode;
 	while (!(ecode = pWnd->ProcessMessages()))

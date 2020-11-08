@@ -72,15 +72,23 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir)Assimp\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)Assimp\lib\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir)Assimp\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)Assimp\lib\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(ProjectDir)Assimp\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)Assimp\lib\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir)Assimp\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)Assimp\lib\Release;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -97,6 +105,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>zlib.lib;zlibstatic.lib;IrrXML.lib;assimp-vc142-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -118,6 +127,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>zlib.lib;zlibstatic.lib;IrrXML.lib;assimp-vc142-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -131,6 +141,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>zlib.lib;zlibstatic.lib;IrrXML.lib;assimp-vc142-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -148,9 +159,14 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>zlib.lib;zlibstatic.lib;IrrXML.lib;assimp-vc142-mt.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Assimp\code\Obj\ObjExporter.cpp" />
+    <ClCompile Include="Assimp\code\Obj\ObjFileImporter.cpp" />
+    <ClCompile Include="Assimp\code\Obj\ObjFileMtlImporter.cpp" />
+    <ClCompile Include="Assimp\code\Obj\ObjFileParser.cpp" />
     <ClCompile Include="DirectXTK\AlphaTestEffect.cpp" />
     <ClCompile Include="DirectXTK\BasicEffect.cpp" />
     <ClCompile Include="DirectXTK\BasicPostProcess.cpp" />
@@ -205,6 +221,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Assert.h" />
+    <ClInclude Include="Assimp\code\Obj\ObjExporter.h" />
+    <ClInclude Include="Assimp\code\Obj\ObjFileData.h" />
+    <ClInclude Include="Assimp\code\Obj\ObjFileImporter.h" />
+    <ClInclude Include="Assimp\code\Obj\ObjFileMtlImporter.h" />
+    <ClInclude Include="Assimp\code\Obj\ObjFileParser.h" />
+    <ClInclude Include="Assimp\code\Obj\ObjTools.h" />
     <ClInclude Include="Debug.h" />
     <ClInclude Include="DirectXTK\AlignedNew.h" />
     <ClInclude Include="DirectXTK\Audio.h" />

@@ -25,6 +25,12 @@
     <Filter Include="Source Files\DirectXTK">
       <UniqueIdentifier>{9bcbb77d-c4ca-44d3-a394-b618a214d4d1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Assimp">
+      <UniqueIdentifier>{0acff6b1-a8cd-42f8-8049-5a5da2fb0623}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Assimp">
+      <UniqueIdentifier>{d167f77c-4fed-4ab1-856d-02d6948270e1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="MessageMap.cpp">
@@ -179,6 +185,18 @@
     </ClCompile>
     <ClCompile Include="DirectXTK\WICTextureLoader.cpp">
       <Filter>Source Files\DirectXTK</Filter>
+    </ClCompile>
+    <ClCompile Include="Assimp\code\Obj\ObjFileParser.cpp">
+      <Filter>Source Files\Assimp</Filter>
+    </ClCompile>
+    <ClCompile Include="Assimp\code\Obj\ObjExporter.cpp">
+      <Filter>Source Files\Assimp</Filter>
+    </ClCompile>
+    <ClCompile Include="Assimp\code\Obj\ObjFileImporter.cpp">
+      <Filter>Source Files\Assimp</Filter>
+    </ClCompile>
+    <ClCompile Include="Assimp\code\Obj\ObjFileMtlImporter.cpp">
+      <Filter>Source Files\Assimp</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -355,6 +373,24 @@
     </ClInclude>
     <ClInclude Include="StringId.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Assimp\code\Obj\ObjFileImporter.h">
+      <Filter>Header Files\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Assimp\code\Obj\ObjFileMtlImporter.h">
+      <Filter>Header Files\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Assimp\code\Obj\ObjFileParser.h">
+      <Filter>Header Files\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Assimp\code\Obj\ObjTools.h">
+      <Filter>Header Files\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Assimp\code\Obj\ObjExporter.h">
+      <Filter>Header Files\Assimp</Filter>
+    </ClInclude>
+    <ClInclude Include="Assimp\code\Obj\ObjFileData.h">
+      <Filter>Header Files\Assimp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
